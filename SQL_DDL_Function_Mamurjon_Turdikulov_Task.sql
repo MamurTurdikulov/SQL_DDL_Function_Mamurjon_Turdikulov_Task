@@ -9,7 +9,7 @@ FROM
     JOIN inventory i ON r.inventory_id = i.inventory_id
     JOIN film_category fc ON i.film_id = fc.film_id
 WHERE
-    QUARTER(p.payment_date) = QUARTER(NOW()) AND YEAR(p.payment_date) = YEAR(NOW())
+    QUARTER(p.payment_date) = QUARTER(CURRENT_DATE) AND YEAR(p.payment_date) = YEAR(CURRENT_DATE)
 GROUP BY
     fc.category
 HAVING
@@ -30,7 +30,7 @@ BEGIN
             JOIN inventory i ON r.inventory_id = i.inventory_id
             JOIN film_category fc ON i.film_id = fc.film_id
         WHERE
-            QUARTER(p.payment_date) = quarter AND YEAR(p.payment_date) = YEAR(NOW())
+            QUARTER(p.payment_date) = quarter AND YEAR(p.payment_date) = YEAR(CURRENT_DATE)
         GROUP BY
             fc.category
         HAVING
@@ -57,11 +57,10 @@ BEGIN
         INSERT INTO language (name) VALUES ('Klingon');
     END IF;
 
-    -- Insert the new movie into the film table
-    INSERT INTO film (film_id, title, rental_rate, rental_duration, replacement_cost, release_year, language_id)
-    VALUES (new_film_id, movie_title, 4.99, 3, 19.99, YEAR(NOW()), (SELECT language_id FROM language WHERE name = 'Klingon'));
-
-    -- Replace the function if it already exists
-    DROP PROCEDURE IF EXISTS new_movie;
+    -- Insert the new movie into the film table if the title is unique
+    IF NOT EXISTS (SELECT 1 FROM film WHERE title = movie_title) THEN
+        INSERT INTO film (film_id, title, rental_rate, rental_duration, replacement_cost, release_year, language_id)
+        VALUES (new_film_id, movie_title, 4.99, 3, 19.99, YEAR(CURRENT_DATE), (SELECT language_id FROM language WHERE name = 'Klingon'));
+    END IF;
 END //
 DELIMITER ;
